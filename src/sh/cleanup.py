@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.config import CLEANUP_EXPIRE_DAYS
-from src.sh.models import ShortLink
+from config import CLEANUP_EXPIRE_DAYS
+from sh.models import ShortLink
 
 
 async def cleanup_old_links(session: AsyncSession):

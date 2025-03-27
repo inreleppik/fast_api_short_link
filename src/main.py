@@ -1,16 +1,16 @@
 from fastapi import FastAPI, Depends, HTTPException
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from src.auth.users import auth_backend, current_active_user, fastapi_users
-from src.auth.schemas import UserCreate, UserRead 
-from src.auth.db import User, create_db_and_tables
+from auth.users import auth_backend, current_active_user, fastapi_users
+from auth.schemas import UserCreate, UserRead 
+from auth.db import User, create_db_and_tables
 
 from redis import asyncio as aioredis
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from src.sh.router import router as link_router
-from src.database import get_async_session
-from src.sh.cleanup import cleanup_old_links
+from sh.router import router as link_router
+from database import get_async_session
+from sh.cleanup import cleanup_old_links
 
 import uvicorn
 

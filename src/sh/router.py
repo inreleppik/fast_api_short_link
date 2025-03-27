@@ -6,12 +6,12 @@ from typing import List, Optional
 import uuid
 
 
-from src.sh.models import ShortLink
-from src.sh.schemas import LinkCreate, LinkUpdate, LinkStats, LinkSearchRequest, LinkSearchResponse
+from sh.models import ShortLink
+from sh.schemas import LinkCreate, LinkUpdate, LinkStats, LinkSearchRequest, LinkSearchResponse
 
-from src.database import get_async_session
-from src.auth.schemas import UserRead
-from src.auth.users import fastapi_users, auth_backend
+from database import get_async_session
+from auth.schemas import UserRead
+from auth.users import fastapi_users, auth_backend
 
 router = APIRouter(prefix="/links", tags=["Links"])
 

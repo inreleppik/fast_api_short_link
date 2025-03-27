@@ -1,34 +1,32 @@
-version: "3.8"
-
+version: "3.7"
 services:
   db:
     image: postgres:16
     container_name: db_app
-    restart: always
     environment:
-      POSTGRES_DB: sl_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sl_db
     ports:
-      - "5432:5432"
+      - "1221:5432"
+    expose:
+      - "1221"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
-  web:
+  app:
     build:
       context: .
-    container_name: fastapi_short_link
+    container_name: fast_api_short_link
+    command: ["/fast_api_short_link/docker/app.sh"]
+    ports:
+      - "9999:8000"
     depends_on:
       - db
-    ports:
-      - "8000:8000"
     environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASS: postgres
-      DB_NAME: sl_db
-    restart: always
+      - DATABASE_URL=postgresql+asyncpg://postgres:mysecretpassword@db:5432/fastapi_links
+      - PYTHONPATH=/fast_api_short_link
 
 volumes:
-  pg_data:
+  postgres_data:
+  

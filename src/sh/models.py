@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, UUID, ForeignKey, Boolean, func
 from datetime import datetime, timezone
-from src.models import Base
+from src.auth.models import Base
 
 class ShortLink(Base):
     __tablename__ = "short_links"
