@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
+from fastapi.responses import RedirectResponse
 import uuid
 
 
@@ -59,7 +60,6 @@ async def create_short_link(
 
 @router.get("/{short_code}")
 async def redirect(short_code: str, session: AsyncSession = Depends(get_async_session)):
-
     result = await session.execute(
         select(ShortLink).where(ShortLink.short_code == short_code)
     )
@@ -75,7 +75,8 @@ async def redirect(short_code: str, session: AsyncSession = Depends(get_async_se
     link.clicks += 1
     link.last_used_at = datetime.now(timezone.utc)
     await session.commit()
-    return {"original_url": link.original_url}
+
+    return RedirectResponse(url=link.original_url)
 
 @router.get("/search/", response_model=List[LinkSearchResponse])
 async def search_by_original_url(
