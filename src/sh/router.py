@@ -4,6 +4,8 @@ from sqlalchemy import select
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 from fastapi.responses import RedirectResponse
+import random
+import string
 import uuid
 
 
@@ -19,13 +21,31 @@ router = APIRouter(prefix="/links", tags=["Links"])
 current_active_user = fastapi_users.current_user(active=True)
 current_user_or_none = fastapi_users.current_user(optional=True)
 
+def generate_random_alias(length: int = 8) -> str:
+    """Генерация случайной строки из букв и цифр заданной длины."""
+    chars = string.ascii_letters + string.digits  # ABC...Z abc...z 0-9
+    return "".join(random.choice(chars) for _ in range(length))
+
 @router.post("/shorten", response_model=LinkStats)
 async def create_short_link(
     link_data: LinkCreate,
     session: AsyncSession = Depends(get_async_session),
     user: Optional[UserRead] = Depends(current_user_or_none),
 ):
-    short_code = link_data.custom_alias or str(uuid.uuid4())[:8]
+
+
+    if user is None:
+        short_code = generate_random_alias(8)
+        forced_expires = datetime.now(timezone.utc) + timedelta(days=7)
+        expires = forced_expires
+        user_id = None
+    else:
+        if link_data.custom_alias:
+            short_code = link_data.custom_alias
+        else:
+            short_code = generate_random_alias(8)
+        expires = link_data.expires_at
+        user_id = user.id
 
     existing = await session.execute(
         select(ShortLink).where(ShortLink.short_code == short_code)
@@ -37,15 +57,7 @@ async def create_short_link(
             await session.delete(link_in_db)
             await session.flush()
         else:
-            raise HTTPException(status_code=400, detail="Alias уже занят!")
-
-    if user is None:
-        forced_expires = datetime.now(timezone.utc) + timedelta(days=7)
-        expires = forced_expires
-        user_id = None
-    else:
-        user_id = user.id
-        expires = link_data.expires_at
+            raise HTTPException(status_code=400, detail="Алиас уже занят")
 
     new_link = ShortLink(
         short_code=short_code,
@@ -53,9 +65,11 @@ async def create_short_link(
         expires_at=expires,
         user_id=user_id,
     )
+
     session.add(new_link)
     await session.commit()
     await session.refresh(new_link)
+
     return new_link
 
 @router.get("/{short_code}")
@@ -97,9 +111,27 @@ async def search_by_original_url(
     return links
 
 @router.get("/expired/", response_model=List[LinkStats])
-async def get_expired_links(session: AsyncSession = Depends(get_async_session)):
+async def get_expired_links(
+    session: AsyncSession = Depends(get_async_session),
+    user: UserRead = Depends(current_active_user),
+):
+    stmt = select(ShortLink).where(
+        (ShortLink.user_id == user.id) &
+        (ShortLink.is_deleted.is_(True))
+    )
+    result = await session.execute(stmt)
+    links = result.scalars().all()
+    return links
 
-    stmt = select(ShortLink).where(ShortLink.is_deleted.is_(True))
+@router.get("/my/", response_model=List[LinkStats])
+async def get_user_links(
+    session: AsyncSession = Depends(get_async_session),
+    user: UserRead = Depends(current_active_user),
+):
+    stmt = select(ShortLink).where(
+        (ShortLink.user_id == user.id) & 
+        (ShortLink.is_deleted == False)
+    )
     result = await session.execute(stmt)
     links = result.scalars().all()
     return links
@@ -145,7 +177,7 @@ async def delete_link(
 
     link.is_deleted = True
     await session.commit()
-    return {"detail": "Ссылка помечена как удалённая"}
+    return {"detail": "Ссылка удалена"}
 
 @router.put("/{short_code}")
 async def update_link(
