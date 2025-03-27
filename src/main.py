@@ -5,9 +5,6 @@ from auth.users import auth_backend, current_active_user, fastapi_users
 from auth.schemas import UserCreate, UserRead 
 from auth.db import User, create_db_and_tables
 
-from redis import asyncio as aioredis
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
 from sh.router import router as link_router
 from database import get_async_session
 from sh.cleanup import cleanup_old_links
